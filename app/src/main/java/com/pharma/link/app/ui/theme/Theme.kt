@@ -8,18 +8,29 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val LightColorScheme = lightColorScheme(
+    primary = PharmaLinkBlue,      // اللون الأزرق الأساسي (زي التابات وزر الـ +)
+    secondary = TabTextOff,        // لون ثانوي (للرماديات)
+    tertiary = StatusActiveText,   // لون تالت (ممكن نخليه للأخضر)
+
+    // إضافات مهمة عشان خلفية الأبلكيشن والكروت
+    background = BackgroundColor,  // لون خلفية الشاشة (الرمادي الفاتح جداً)
+    surface = CardBackground,      // لون الكروت (الأبيض)
+    onPrimary = Color.White,       // لون النص فوق اللون الأساسي
+    onBackground = PrimaryDarkText,// لون النص فوق الخلفية
+    onSurface = PrimaryDarkText    // لون النص فوق الكروت
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val DarkColorScheme = darkColorScheme(
+    primary = PharmaLinkBlue,
+    secondary = TabTextOff,
+    tertiary = StatusActiveText,
+    background = Color(0xFF121212),
+    surface = Color(0xFF1E1E1E)
+)
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -30,7 +41,7 @@ private val LightColorScheme = lightColorScheme(
     onBackground = Color(0xFF1C1B1F),
     onSurface = Color(0xFF1C1B1F),
     */
-)
+
 
 @Composable
 fun PharmaLinkTheme(

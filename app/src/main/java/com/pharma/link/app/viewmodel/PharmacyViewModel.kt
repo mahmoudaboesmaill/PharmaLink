@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,13 +34,12 @@ class PharmacyViewModel @Inject constructor(
     fun addPharmacy(name: String, address: String, phone: String) {
         viewModelScope.launch {
             val newPharmacy = PharmacyEntity(
-                pharmacyId = System.currentTimeMillis().toString(), // ID فريد مبني على الوقت
+                 pharmacyId = UUID.randomUUID().toString(), // ID فريد مبني على الوقت
                 name = name,
                 address = address,
                 phone = phone,
                 email = "",
                 licenceNumber = "",
-                password = ""
 
             )
             pharmacyRepository.insertPharmacy(newPharmacy)
