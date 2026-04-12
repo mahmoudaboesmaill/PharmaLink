@@ -7,6 +7,7 @@ import com.pharma.link.app.data.entities.CreditAccountEntity
 import com.pharma.link.app.data.entities.InvoiceEntity
 import com.pharma.link.app.data.entities.NotificationEntity
 import com.pharma.link.app.data.entities.PaymentEntity
+import com.pharma.link.app.data.entities.PharmacyAuthEntity
 import com.pharma.link.app.data.entities.PharmacyEntity
 import com.pharma.link.app.data.entities.ReturnEntity
 import com.pharma.link.app.data.entities.SalesRepEntity
@@ -23,6 +24,7 @@ import com.pharma.link.app.data.local.dao.SalesRepDao
 @Database(
     entities = [
         PharmacyEntity::class,
+        PharmacyAuthEntity::class,
         SalesRepEntity::class,
         InvoiceEntity::class,
         PaymentEntity::class,
