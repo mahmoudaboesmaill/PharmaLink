@@ -17,7 +17,7 @@ import androidx.room.PrimaryKey
 
 data class PharmacyAuthEntity(
     @PrimaryKey(autoGenerate = true)
-    val authid: Int = 0,
+    val authId: Int = 0,
     val pharmacyId: String,
     val password: String,
     val lastLogin: Long? = null,
