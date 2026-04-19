@@ -12,4 +12,5 @@ data class PharmacyEntity(
     val licenceNumber: String,
     val phone : String,
     val email: String,
+    val status: String = "ACTIVE"
 )

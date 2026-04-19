@@ -21,4 +21,5 @@ data class PharmacyAuthEntity(
     val pharmacyId: String,
     val password: String,
     val lastLogin: Long? = null,
+    
 )
