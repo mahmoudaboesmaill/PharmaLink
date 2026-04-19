@@ -1,5 +1,7 @@
 package com.pharma.link.app.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -8,12 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import com.pharma.link.app.ui.theme.*
 
 data class BottomNavItem(
@@ -29,81 +31,86 @@ fun PharmaBottomNavBar(
     onFabClick: () -> Unit
 ) {
     val items = listOf(
-        BottomNavItem("Main",  Icons.Default.Home,        "home"),
+        BottomNavItem("Home",       Icons.Default.Home,        "home"),
         BottomNavItem("Pharmacies", Icons.Default.LocationOn,  "pharmacies"),
-        BottomNavItem("Invoices",  Icons.Default.Description, "invoices"),
+        BottomNavItem("Invoices",   Icons.Default.Description, "invoices"),
         BottomNavItem("Account",    Icons.Default.Person,      "account")
     )
 
     Box(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
     ) {
-        // الـ NavigationBar نفسه
-        NavigationBar(
-            containerColor = Color.White,
-            tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxWidth()
+        // الخط الفاصل فوق
+        HorizontalDivider(
+            color = Color(0xFFD6E6F5),
+            thickness = 0.5.dp,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
+
+        // الـ Row الرئيسي
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 1.dp)
+                .padding(bottom = 20.dp)
+                .height(60.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEachIndexed { index, item ->
+
                 // مكان فاضي في النص للـ FAB
                 if (index == 2) {
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(72.dp))
                 }
-                NavigationBarItem(
-                    selected = currentRoute == item.route,
-                    onClick = { onItemClick(item.route) },
-                    icon = {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    },
-                    label = {
-                        Text(
-                            text = item.label,
-                            fontSize = 10.sp,
-                            fontWeight = if (currentRoute == item.route)
-                                FontWeight.SemiBold else FontWeight.Normal
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = PharmaLinkBlue,
-                        selectedTextColor = PharmaLinkBlue,
-                        unselectedIconColor = BottomNavIconOff,
-                        unselectedTextColor = BottomNavIconOff,
-                        indicatorColor = Color.Transparent
+
+                // كل تاب
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { onItemClick(item.route) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.label,
+                        tint = if (currentRoute == item.route) PharmaLinkBlue
+                        else BottomNavIconOff,
+                        modifier = Modifier.size(22.dp)
                     )
-                )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = item.label,
+                        fontSize = 10.sp,
+                        fontWeight = if (currentRoute == item.route)
+                            FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (currentRoute == item.route) PharmaLinkBlue
+                        else BottomNavIconOff
+                    )
+                }
             }
         }
 
-        // الـ FAB في النص
+        // الـ FAB في النص فوق الـ Row
         FloatingActionButton(
             onClick = onFabClick,
             modifier = Modifier
                 .size(56.dp)
                 .align(Alignment.TopCenter)
-                .offset(y = (-16).dp),
+                .offset(y = (-20).dp),
             shape = RoundedCornerShape(16.dp),
             containerColor = PharmaLinkBlue,
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = 6.dp
-            )
+            elevation = FloatingActionButtonDefaults.elevation(6.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "إضافة",
+                contentDescription = "Add",
                 tint = Color.White,
                 modifier = Modifier.size(24.dp)
             )
         }
     }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-
-fun PharmaBottomNavBarPreview(){
-    PharmaBottomNavBar("home", {}, {})
 }

@@ -1,71 +1,51 @@
 package com.pharma.link.app.ui.screens.pharmacy_list
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pharma.link.app.ui.components.PharmaBottomNavBar
-import com.pharma.link.app.ui.theme.BackgroundColor
-import com.pharma.link.app.ui.theme.PharmaLinkBlue
-import com.pharma.link.app.ui.theme.PrimaryDarkText
-import com.pharma.link.app.ui.theme.TabTextOff
+import com.pharma.link.app.ui.theme.*
 import com.pharma.link.app.viewmodel.PharmacyViewModel
 
 @Composable
 fun PharmacyListScreen(
     viewModel: PharmacyViewModel,
-    onAddPharmacyClick: () -> Unit
+    onAddPharmacyClick: () -> Unit,
+    onPharmacyClick: (String) -> Unit = {}
 ) {
-    val pharmacies by viewModel.pharmacies.collectAsState()
-    var selectedFilter by remember { mutableStateOf("ALL") }
-    var currentRoute by remember { mutableStateOf("pharmacies") }
-
-    // فلترة القائمة حسب الـ chip المختار
-    val filteredPharmacies = remember(pharmacies, selectedFilter) {
-        if (selectedFilter == "ALL") pharmacies
-        else pharmacies.filter { it.status == selectedFilter }
-    }
+    // كل الداتا جاية من الـ ViewModel مباشرة
+    val filteredPharmacies by viewModel.filteredPharmacies.collectAsState()
+    val searchQuery        by viewModel.searchQuery.collectAsState()
+    val selectedFilter     by viewModel.selectedFilter.collectAsState()
+    var currentRoute       by remember { mutableStateOf("pharmacies") }
+    val focusManager       = LocalFocusManager.current
 
     Scaffold(
         containerColor = BackgroundColor,
         bottomBar = {
             PharmaBottomNavBar(
                 currentRoute = currentRoute,
-                onItemClick = { currentRoute = it },
-                onFabClick = onAddPharmacyClick
+                onItemClick  = { currentRoute = it },
+                onFabClick   = onAddPharmacyClick
             )
         }
     ) { paddingValues ->
@@ -74,6 +54,7 @@ fun PharmacyListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+
             // ── Top Bar ──────────────────────────────
             Column(
                 modifier = Modifier
@@ -82,7 +63,6 @@ fun PharmacyListScreen(
                     .padding(horizontal = 20.dp)
                     .padding(top = 16.dp)
             ) {
-                // العنوان + الأيقونات
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -111,32 +91,40 @@ fun PharmacyListScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Search Bar
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFEBF2FA)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
+                // ── Search Bar حقيقي ─────────────────
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.onSearchQueryChange(it) },
+                    placeholder = {
+                        Text(
+                            text = "Search for a pharmacy...",
+                            fontSize = 14.sp,
+                            color = TabTextOff
+                        )
+                    },
+                    leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
                             tint = TabTextOff,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                        Text(
-                            text = "Search...",
-                            maxLines = 1,
-                            fontSize = 14.sp,
-
-                            color = TabTextOff
-                        )
-                    }
-                }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor   = Color(0xFFEBF2FA),
+                        unfocusedContainerColor = Color(0xFFEBF2FA),
+                        focusedIndicatorColor   = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor  = Color.Transparent
+                    ),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = { focusManager.clearFocus() }
+                    )
+                )
 
                 Spacer(modifier = Modifier.height(4.dp))
             }
@@ -144,8 +132,8 @@ fun PharmacyListScreen(
             // ── Filter Chips ─────────────────────────
             Spacer(modifier = Modifier.height(8.dp))
             PharmacyFilterChips(
-                selectedFilter = selectedFilter,
-                onFilterSelected = { selectedFilter = it }
+                selectedFilter   = selectedFilter,
+                onFilterSelected = { viewModel.onFilterSelected(it) }
             )
 
             // ── عداد الصيدليات ───────────────────────
@@ -158,13 +146,13 @@ fun PharmacyListScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${filteredPharmacies.size}Registered pharmacy",
+                    text = "${filteredPharmacies.size} Registered pharmacies",
                     fontSize = 13.sp,
                     color = TabTextOff,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Explore Map",
+                    text = "View Map",
                     fontSize = 12.sp,
                     color = PharmaLinkBlue,
                     fontWeight = FontWeight.SemiBold
@@ -183,10 +171,11 @@ fun PharmacyListScreen(
             ) {
                 items(
                     items = filteredPharmacies,
-                    key = { it.pharmacyId }
+                    key   = { it.pharmacyId }
                 ) { pharmacy ->
                     PharmacyCard(
-                        pharmacy = pharmacy,
+                        pharmacy    = pharmacy,
+                        onClick     = { onPharmacyClick(pharmacy.pharmacyId) },
                         onEditClick = { /* هنفعله بعدين */ },
                         onMoreClick = { /* هنفعله بعدين */ }
                     )
@@ -196,7 +185,6 @@ fun PharmacyListScreen(
     }
 }
 
-// ── Composable صغير لأيقونات الـ Top Bar ──
 @Composable
 fun TopIconButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,

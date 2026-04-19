@@ -1,13 +1,15 @@
 package com.pharma.link.app.ui.screens.add_pharmacy
 
-import com.pharma.link.app.viewmodel.PharmacyViewModel
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.pharma.link.app.viewmodel.PharmacyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -15,18 +17,28 @@ fun AddPharmacyScreen(
     viewModel: PharmacyViewModel,
     onBack: () -> Unit
 ) {
-    // تعريف متغيرات الـ State لكل Input
-    var name by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
+    var name           by remember { mutableStateOf("") }
+    var address        by remember { mutableStateOf("") }
+    var phone          by remember { mutableStateOf("") }
+    var email          by remember { mutableStateOf("") }
+    var licenceNumber  by remember { mutableStateOf("") }
+
+    // Dropdown للـ status
+    var selectedStatus    by remember { mutableStateOf("ACTIVE") }
+    var statusDropdownOpen by remember { mutableStateOf(false) }
+    val statusOptions = listOf(
+        "ACTIVE"    to "Active",
+        "SUSPENDED" to "Suspended",
+        "HIGH_DEBT" to "High Debt"
+    )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("إضافة صيدلية جديدة") },
+                title = { Text("Add New Pharmacy") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "رجوع")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -36,43 +48,107 @@ fun AddPharmacyScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("اسم الصيدلية") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Pharmacy Name") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             OutlinedTextField(
                 value = address,
                 onValueChange = { address = it },
-                label = { Text("العنوان") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Address") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("رقم التليفون") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Phone Number") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = licenceNumber,
+                onValueChange = { licenceNumber = it },
+                label = { Text("Licence Number") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            // ── Status Dropdown ───────────────────
+            ExposedDropdownMenuBox(
+                expanded = statusDropdownOpen,
+                onExpandedChange = { statusDropdownOpen = it }
+            ) {
+                OutlinedTextField(
+                    value = statusOptions.find {
+                        it.first == selectedStatus
+                    }?.second ?: "Active",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Status") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = statusDropdownOpen
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = statusDropdownOpen,
+                    onDismissRequest = { statusDropdownOpen = false }
+                ) {
+                    statusOptions.forEach { (key, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                selectedStatus    = key
+                                statusDropdownOpen = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = {
                     if (name.isNotBlank() && address.isNotBlank()) {
-                        viewModel.addPharmacy(name, address, phone)
-                        onBack() // ارجع للشاشة اللي فاتت بعد الحفظ
+                        viewModel.addPharmacy(
+                            name          = name,
+                            address       = address,
+                            phone         = phone,
+                            email         = email,
+                            licenceNumber = licenceNumber,
+                            status        = selectedStatus
+                        )
+                        onBack()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = name.isNotBlank() // الزرار مبيشتغلش غير لما يكتب الاسم
+                enabled = name.isNotBlank() && address.isNotBlank()
             ) {
-                Text("حفظ الصيدلية")
+                Text("Save Pharmacy")
             }
         }
     }

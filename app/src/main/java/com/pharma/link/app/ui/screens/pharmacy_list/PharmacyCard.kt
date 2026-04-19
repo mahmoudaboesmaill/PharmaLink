@@ -86,6 +86,7 @@ fun getCardColors(status: String): PharmacyCardColors {
 @Composable
 fun PharmacyCard(
     pharmacy: PharmacyEntity,
+    onClick: () -> Unit,
     onEditClick: () -> Unit,
     onMoreClick: () -> Unit,
 ) {
@@ -94,6 +95,7 @@ fun PharmacyCard(
     // الخطوة 2 — الكارت الأبيض بالـ border
     Card(
         modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -336,6 +338,7 @@ fun PharmacyCardPreview() {
         email = "mahmoudaboesmaill1991@gmail.com",
         licenceNumber = "1111100000"),
         onEditClick = { },
-        onMoreClick = { })
+        onMoreClick = { },
+        onClick = { })
 }
 

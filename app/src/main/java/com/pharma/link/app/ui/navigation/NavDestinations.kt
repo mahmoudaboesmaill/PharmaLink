@@ -4,11 +4,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed class Screen {
-    @Serializable
-    data object PharmacyList :Screen()
 
     @Serializable
-    data object AddPharmacy :Screen()
+    data object PharmacyList : Screen()
 
+    @Serializable
+    data object AddPharmacy : Screen()
 
+    @Serializable
+    data class PharmacyDetail(val pharmacyId: String) : Screen()
 }
