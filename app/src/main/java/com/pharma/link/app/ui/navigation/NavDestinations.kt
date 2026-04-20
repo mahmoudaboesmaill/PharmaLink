@@ -1,3 +1,4 @@
+
 package com.pharma.link.app.ui.navigation
 
 import kotlinx.serialization.Serializable
@@ -13,4 +14,7 @@ sealed class Screen {
 
     @Serializable
     data class PharmacyDetail(val pharmacyId: String) : Screen()
+
+    @Serializable
+    data class EditPharmacy(val pharmacyId: String) : Screen()
 }

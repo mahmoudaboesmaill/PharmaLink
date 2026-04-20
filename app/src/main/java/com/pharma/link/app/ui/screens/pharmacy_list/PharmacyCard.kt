@@ -5,12 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,10 +19,6 @@ import androidx.compose.ui.unit.sp
 import com.pharma.link.app.data.entities.PharmacyEntity
 import com.pharma.link.app.ui.theme.*
 
-// ─────────────────────────────────────────
-// Data class صغيرة بتحمل ألوان الكارت
-// حسب الـ status
-// ─────────────────────────────────────────
 data class PharmacyCardColors(
     val accentLine: Color,
     val iconBg: Color,
@@ -38,10 +31,6 @@ data class PharmacyCardColors(
     val actionIcon: Color,
 )
 
-// ─────────────────────────────────────────
-// الخطوة 5 — دالة بترجع الألوان الصح
-// حسب الـ status بتاع الصيدلية
-// ─────────────────────────────────────────
 fun getCardColors(status: String): PharmacyCardColors {
     return when (status) {
         "ACTIVE" -> PharmacyCardColors(
@@ -66,7 +55,7 @@ fun getCardColors(status: String): PharmacyCardColors {
             actionBg     = Color(0xFFFDF3E3),
             actionIcon   = StatusDebtText,
         )
-        else -> PharmacyCardColors( // SUSPENDED
+        else -> PharmacyCardColors(
             accentLine   = Color(0xFF9AAFC0),
             iconBg       = Color(0xFFEBF0F5),
             iconTint     = Color(0xFF6B8399),
@@ -80,35 +69,62 @@ fun getCardColors(status: String): PharmacyCardColors {
     }
 }
 
-// ─────────────────────────────────────────
-// الخطوة 1 و 2 — الكارت الرئيسي
-// ─────────────────────────────────────────
 @Composable
 fun PharmacyCard(
     pharmacy: PharmacyEntity,
     onClick: () -> Unit,
     onEditClick: () -> Unit,
-    onMoreClick: () -> Unit,
+    onDeleteClick: () -> Unit = {},
 ) {
     val colors = getCardColors(pharmacy.status)
 
-    // الخطوة 2 — الكارت الأبيض بالـ border
+    // الخطوة 5 — State للـ DropdownMenu والـ DeleteDialog
+    var showDropdown     by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // ── Delete Confirmation Dialog ────────────
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Pharmacy") },
+            text  = {
+                Text("Are you sure you want to delete \"${pharmacy.name}\"? This action cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDeleteClick()
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackground),
+        modifier  = Modifier.fillMaxWidth(),
+        onClick   = onClick,
+        shape     = RoundedCornerShape(18.dp),
+        colors    = CardDefaults.cardColors(containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
+        border    = androidx.compose.foundation.BorderStroke(
             width = 0.5.dp,
             color = Color(0xFFD6E6F5)
         )
     ) {
-        // الخطوة 3 — Row بيحتوي الخط الجانبي + المحتوى
-        Row(modifier = Modifier.fillMaxWidth()
-            .height(IntrinsicSize.Min)) {
-
-            // الخط الجانبي الملون
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+        ) {
+            // الخط الجانبي
             Box(
                 modifier = Modifier
                     .width(4.dp)
@@ -116,13 +132,11 @@ fun PharmacyCard(
                     .background(colors.accentLine)
             )
 
-            // الخطوة 4 — المحتوى الداخلي
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(14.dp)
             ) {
-                // الصف الأول: الأيقونة + الاسم + الـ ID
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -132,7 +146,6 @@ fun PharmacyCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // أيقونة الصيدلية
                         Box(
                             modifier = Modifier
                                 .size(42.dp)
@@ -141,14 +154,12 @@ fun PharmacyCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.LocationOn,
+                                imageVector = Icons.Default.LocalPharmacy,
                                 contentDescription = null,
                                 tint = colors.iconTint,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-
-                        // الاسم + الـ Badge
                         Column {
                             Text(
                                 text = pharmacy.name,
@@ -156,12 +167,9 @@ fun PharmacyCard(
                                 fontWeight = FontWeight.Bold,
                                 color = PrimaryDarkText
                             )
-                            // الخطوة 5 — Status Badge
                             StatusBadge(colors = colors)
                         }
                     }
-
-                    // الـ ID
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = Color(0xFFEBF2FA)
@@ -171,14 +179,15 @@ fun PharmacyCard(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = PharmaLinkBlue,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(
+                                horizontal = 8.dp, vertical = 4.dp
+                            )
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // العنوان
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -198,7 +207,6 @@ fun PharmacyCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // التليفون
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -220,13 +228,11 @@ fun PharmacyCard(
                 HorizontalDivider(color = Color(0xFFEBF2FA), thickness = 0.5.dp)
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // الرصيد + أزرار الأكشن
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // الرصيد
                     Column {
                         Text(
                             text = "Available Balance",
@@ -241,26 +247,67 @@ fun PharmacyCard(
                         )
                     }
 
-                    // أزرار الأكشن
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // زرار التليفون
                         ActionButton(
                             icon = Icons.Default.Phone,
-                            bg = colors.actionBg,
+                            bg   = colors.actionBg,
                             tint = colors.actionIcon,
                             onClick = {}
                         )
+                        // زرار Edit
                         ActionButton(
                             icon = Icons.Default.Edit,
-                            bg = colors.actionBg,
+                            bg   = colors.actionBg,
                             tint = colors.actionIcon,
                             onClick = onEditClick
                         )
-                        ActionButton(
-                            icon = Icons.Default.MoreVert,
-                            bg = colors.actionBg,
-                            tint = colors.actionIcon,
-                            onClick = onMoreClick
-                        )
+                        // زرار More مع Dropdown
+                        Box {
+                            ActionButton(
+                                icon = Icons.Default.MoreVert,
+                                bg   = colors.actionBg,
+                                tint = colors.actionIcon,
+                                onClick = { showDropdown = true }
+                            )
+                            DropdownMenu(
+                                expanded = showDropdown,
+                                onDismissRequest = { showDropdown = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Edit") },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Edit,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        showDropdown = false
+                                        onEditClick()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            "Delete",
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        showDropdown     = false
+                                        showDeleteDialog = true
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -268,9 +315,6 @@ fun PharmacyCard(
     }
 }
 
-// ─────────────────────────────────────────
-// Composable صغير للـ Badge
-// ─────────────────────────────────────────
 @Composable
 fun StatusBadge(colors: PharmacyCardColors) {
     Surface(
@@ -298,9 +342,6 @@ fun StatusBadge(colors: PharmacyCardColors) {
     }
 }
 
-// ─────────────────────────────────────────
-// Composable صغير لأزرار الأكشن
-// ─────────────────────────────────────────
 @Composable
 fun ActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -312,8 +353,7 @@ fun ActionButton(
         modifier = Modifier
             .size(34.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(bg)
-            .padding(1.dp),
+            .background(bg),
         contentAlignment = Alignment.Center
     ) {
         IconButton(onClick = onClick, modifier = Modifier.size(34.dp)) {
@@ -327,18 +367,21 @@ fun ActionButton(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(showBackground = true)
 @Composable
 fun PharmacyCardPreview() {
-    PharmacyCard(pharmacy = PharmacyEntity(pharmacyId = "1",
-        name = "Doaa",
-        address = "abo",
-        phone = "0123456789",
-        status = "HIGH_DEBT",
-        email = "mahmoudaboesmaill1991@gmail.com",
-        licenceNumber = "1111100000"),
-        onEditClick = { },
-        onMoreClick = { },
-        onClick = { })
+    PharmacyCard(
+        pharmacy = PharmacyEntity(
+            pharmacyId    = "1",
+            name          = "Doaa Pharmacy",
+            address       = "Cairo, Egypt",
+            phone         = "0123456789",
+            status        = "ACTIVE",
+            email         = "test@test.com",
+            licenceNumber = "1111100000"
+        ),
+        onClick       = {},
+        onEditClick   = {},
+        onDeleteClick = {}
+    )
 }
-

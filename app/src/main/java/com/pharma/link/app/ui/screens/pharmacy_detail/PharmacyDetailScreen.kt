@@ -24,7 +24,8 @@ import com.pharma.link.app.viewmodel.PharmacyViewModel
 fun PharmacyDetailScreen(
     pharmacyId: String,
     viewModel: PharmacyViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEditClick: (String) -> Unit = {}
 ) {
     // جيب الصيدلية من الـ ViewModel
     var pharmacy by remember { mutableStateOf<PharmacyEntity?>(null) }
@@ -56,10 +57,15 @@ fun PharmacyDetailScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = BackgroundColor
-                    )
-                )
+                    actions = {
+                        IconButton(onClick = { onEditClick(pharmacyId) }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = PharmaLinkBlue
+                            )
+                        }
+                    })
             }
         ) { paddingValues ->
             Column(

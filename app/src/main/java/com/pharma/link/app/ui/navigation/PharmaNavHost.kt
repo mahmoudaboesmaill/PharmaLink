@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.pharma.link.app.ui.screens.add_pharmacy.AddPharmacyScreen
+import com.pharma.link.app.ui.screens.edit_pharmacy.EditPharmacyScreen
 import com.pharma.link.app.ui.screens.pharmacy_detail.PharmacyDetailScreen
 import com.pharma.link.app.ui.screens.pharmacy_list.PharmacyListScreen
 import com.pharma.link.app.viewmodel.PharmacyViewModel
@@ -26,6 +27,9 @@ fun PharmaNavHost() {
                 onAddPharmacyClick = { navController.navigate(Screen.AddPharmacy) },
                 onPharmacyClick    = { pharmacyId ->
                     navController.navigate(Screen.PharmacyDetail(pharmacyId))
+                },
+                onEditPharmacyClick = { pharmacyId ->
+                    navController.navigate(Screen.EditPharmacy(pharmacyId))
                 }
             )
         }
@@ -42,6 +46,19 @@ fun PharmaNavHost() {
             val screen    = backStackEntry.toRoute<Screen.PharmacyDetail>()
             val viewModel: PharmacyViewModel = hiltViewModel()
             PharmacyDetailScreen(
+                pharmacyId  = screen.pharmacyId,
+                viewModel   = viewModel,
+                onBack      = { navController.popBackStack() },
+                onEditClick = { pharmacyId ->
+                    navController.navigate(Screen.EditPharmacy(pharmacyId))
+                }
+            )
+        }
+
+        composable<Screen.EditPharmacy> { backStackEntry ->
+            val screen    = backStackEntry.toRoute<Screen.EditPharmacy>()
+            val viewModel: PharmacyViewModel = hiltViewModel()
+            EditPharmacyScreen(
                 pharmacyId = screen.pharmacyId,
                 viewModel  = viewModel,
                 onBack     = { navController.popBackStack() }

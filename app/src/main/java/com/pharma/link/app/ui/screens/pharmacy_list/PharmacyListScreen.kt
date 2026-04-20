@@ -30,7 +30,8 @@ import com.pharma.link.app.viewmodel.PharmacyViewModel
 fun PharmacyListScreen(
     viewModel: PharmacyViewModel,
     onAddPharmacyClick: () -> Unit,
-    onPharmacyClick: (String) -> Unit = {}
+    onPharmacyClick: (String) -> Unit = {} ,
+    onEditPharmacyClick: (String) -> Unit = {},
 ) {
     val filteredPharmacies by viewModel.filteredPharmacies.collectAsState()
     val searchQuery        by viewModel.searchQuery.collectAsState()
@@ -229,8 +230,8 @@ fun PharmacyListScreen(
                         PharmacyCard(
                             pharmacy    = pharmacy,
                             onClick     = { onPharmacyClick(pharmacy.pharmacyId) },
-                            onEditClick = { },
-                            onMoreClick = { }
+                            onEditClick   = { onEditPharmacyClick(pharmacy.pharmacyId) },
+                            onDeleteClick = { viewModel.deletePharmacy(pharmacy) }
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
