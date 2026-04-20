@@ -10,45 +10,55 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
+// ── نتيجة عملية الإضافة ─────────────────────
+sealed class AddPharmacyResult {
+    object Success          : AddPharmacyResult()
+    object DuplicatePhone   : AddPharmacyResult()
+    object DuplicateEmail   : AddPharmacyResult()
+    object DuplicateLicence : AddPharmacyResult()
+}
+
 @HiltViewModel
 class PharmacyViewModel @Inject constructor(
     private val pharmacyRepository: PharmacyRepository
 ) : ViewModel() {
 
-    // ── الداتا الخام من الـ DB ──────────────────
+    // ── الداتا الخام من الـ DB ───────────────────
     private val _pharmacies = MutableStateFlow<List<PharmacyEntity>>(emptyList())
 
-    // ── Search ──────────────────────────────────
+    // ── Search ───────────────────────────────────
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    // ── Filter ──────────────────────────────────
+    // ── Filter ───────────────────────────────────
     private val _selectedFilter = MutableStateFlow("ALL")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
 
-    // ── الداتا النهائية بعد Search + Filter ─────
-    // combine بتجمع 3 flows مع بعض
-    // أي تغيير في أي منهم بيحسب النتيجة من أول
+    // ── Loading ──────────────────────────────────
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // ── نتيجة الإضافة ────────────────────────────
+    private val _addResult = MutableStateFlow<AddPharmacyResult?>(null)
+    val addResult: StateFlow<AddPharmacyResult?> = _addResult.asStateFlow()
+
+    // ── الداتا النهائية بعد Search + Filter ──────
     val filteredPharmacies: StateFlow<List<PharmacyEntity>> =
         combine(
             _pharmacies,
             _searchQuery,
             _selectedFilter
         ) { pharmacies, query, filter ->
-
             pharmacies
                 .filter { pharmacy ->
-                    // فلترة بالـ status
                     filter == "ALL" || pharmacy.status == filter
                 }
                 .filter { pharmacy ->
-                    // فلترة بالـ search (الاسم أو العنوان أو التليفون)
                     query.isBlank() ||
                             pharmacy.name.contains(query, ignoreCase = true) ||
                             pharmacy.address.contains(query, ignoreCase = true) ||
                             pharmacy.phone.contains(query, ignoreCase = true)
                 }
-
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -63,11 +73,12 @@ class PharmacyViewModel @Inject constructor(
         viewModelScope.launch {
             pharmacyRepository.getAllPharmacies().collect {
                 _pharmacies.value = it
+                _isLoading.value  = false
             }
         }
     }
 
-    // ── Actions ─────────────────────────────────
+    // ── Actions ──────────────────────────────────
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
@@ -76,7 +87,11 @@ class PharmacyViewModel @Inject constructor(
         _selectedFilter.value = filter
     }
 
-    // الخطوة 7 — addPharmacy محدث بكل الـ fields
+    // reset نتيجة الإضافة بعد ما الـ Screen يستقبلها
+    fun resetAddResult() {
+        _addResult.value = null
+    }
+
     fun addPharmacy(
         name: String,
         address: String,
@@ -86,6 +101,25 @@ class PharmacyViewModel @Inject constructor(
         status: String
     ) {
         viewModelScope.launch {
+
+            // ── تحقق من التكرار ───────────────────
+            if (phone.isNotBlank() &&
+                pharmacyRepository.getPharmacyByPhone(phone) != null) {
+                _addResult.value = AddPharmacyResult.DuplicatePhone
+                return@launch
+            }
+            if (email.isNotBlank() &&
+                pharmacyRepository.getPharmacyByEmail(email) != null) {
+                _addResult.value = AddPharmacyResult.DuplicateEmail
+                return@launch
+            }
+            if (licenceNumber.isNotBlank() &&
+                pharmacyRepository.getPharmacyByLicenceNumber(licenceNumber) != null) {
+                _addResult.value = AddPharmacyResult.DuplicateLicence
+                return@launch
+            }
+
+            // ── احفظ لو مفيش تكرار ───────────────
             val newPharmacy = PharmacyEntity(
                 pharmacyId    = UUID.randomUUID().toString(),
                 name          = name,
@@ -96,6 +130,13 @@ class PharmacyViewModel @Inject constructor(
                 status        = status
             )
             pharmacyRepository.insertPharmacy(newPharmacy)
+            _addResult.value = AddPharmacyResult.Success
+        }
+    }
+
+    fun updatePharmacy(pharmacy: PharmacyEntity) {
+        viewModelScope.launch {
+            pharmacyRepository.updatePharmacy(pharmacy)
         }
     }
 

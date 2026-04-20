@@ -26,4 +26,13 @@ interface PharmacyDao {
     @Delete
     suspend fun deletePharmacy (pharmacy: PharmacyEntity)
 
+    @Query("SELECT * FROM pharmacy_table WHERE phone = :phone LIMIT 1")
+    suspend fun getPharmacyByPhone(phone: String): PharmacyEntity?
+
+    @Query("SELECT * FROM pharmacy_table WHERE email = :email LIMIT 1")
+    suspend fun getPharmacyByEmail(email: String): PharmacyEntity?
+
+    @Query("SELECT * FROM pharmacy_table WHERE licenceNumber = :licenceNumber LIMIT 1")
+    suspend fun getPharmacyByLicenceNumber(licenceNumber: String): PharmacyEntity?
+
 }

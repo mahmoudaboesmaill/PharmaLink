@@ -32,10 +32,10 @@ fun PharmacyListScreen(
     onAddPharmacyClick: () -> Unit,
     onPharmacyClick: (String) -> Unit = {}
 ) {
-    // كل الداتا جاية من الـ ViewModel مباشرة
     val filteredPharmacies by viewModel.filteredPharmacies.collectAsState()
     val searchQuery        by viewModel.searchQuery.collectAsState()
     val selectedFilter     by viewModel.selectedFilter.collectAsState()
+    val isLoading          by viewModel.isLoading.collectAsState()
     var currentRoute       by remember { mutableStateOf("pharmacies") }
     val focusManager       = LocalFocusManager.current
 
@@ -49,136 +49,191 @@ fun PharmacyListScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
 
-            // ── Top Bar ──────────────────────────────
-            Column(
+        if (isLoading) {
+            // ── Loading State ─────────────────────
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BackgroundColor)
-                    .padding(horizontal = 20.dp)
-                    .padding(top = 16.dp)
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "PharmaLink",
-                            fontSize = 12.sp,
-                            color = PharmaLinkBlue,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp
-                        )
-                        Text(
-                            text = "Pharmacies",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryDarkText
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        TopIconButton(icon = Icons.Default.Search, onClick = {})
-                        TopIconButton(icon = Icons.Default.SwapVert, onClick = {})
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // ── Search Bar حقيقي ─────────────────
-                TextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.onSearchQueryChange(it) },
-                    placeholder = {
-                        Text(
-                            text = "Search for a pharmacy...",
-                            fontSize = 14.sp,
-                            color = TabTextOff
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = TabTextOff,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor   = Color(0xFFEBF2FA),
-                        unfocusedContainerColor = Color(0xFFEBF2FA),
-                        focusedIndicatorColor   = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor  = Color.Transparent
-                    ),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = { focusManager.clearFocus() }
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
+                CircularProgressIndicator(color = PharmaLinkBlue)
             }
-
-            // ── Filter Chips ─────────────────────────
-            Spacer(modifier = Modifier.height(8.dp))
-            PharmacyFilterChips(
-                selectedFilter   = selectedFilter,
-                onFilterSelected = { viewModel.onFilterSelected(it) }
-            )
-
-            // ── عداد الصيدليات ───────────────────────
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${filteredPharmacies.size} Registered pharmacies",
-                    fontSize = 13.sp,
-                    color = TabTextOff,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = "View Map",
-                    fontSize = 12.sp,
-                    color = PharmaLinkBlue,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // ── LazyColumn ───────────────────────────
+        } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(paddingValues),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
+
+                // ── item 1: Top Bar ───────────────
+                item(key = "topbar") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(BackgroundColor)
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "PharmaLink",
+                                    fontSize = 12.sp,
+                                    color = PharmaLinkBlue,
+                                    fontWeight = FontWeight.Medium,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Text(
+                                    text = "Pharmacies",
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryDarkText
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                TopIconButton(
+                                    icon = Icons.Default.Search,
+                                    onClick = {}
+                                )
+                                TopIconButton(
+                                    icon = Icons.Default.SwapVert,
+                                    onClick = {}
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Search Bar
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.onSearchQueryChange(it) },
+                            placeholder = {
+                                Text(
+                                    text = "Search for a pharmacy...",
+                                    fontSize = 14.sp,
+                                    color = TabTextOff
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null,
+                                    tint = TabTextOff,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor   = Color(0xFFEBF2FA),
+                                unfocusedContainerColor = Color(0xFFEBF2FA),
+                                focusedIndicatorColor   = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor  = Color.Transparent
+                            ),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Search
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onSearch = { focusManager.clearFocus() }
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+
+                // ── item 2: Filter Chips ──────────
+                item(key = "filters") {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    PharmacyFilterChips(
+                        selectedFilter   = selectedFilter,
+                        onFilterSelected = { viewModel.onFilterSelected(it) }
+                    )
+                }
+
+                // ── item 3: Counter Row ───────────
+                item(key = "counter") {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${filteredPharmacies.size} Registered pharmacies",
+                            fontSize = 13.sp,
+                            color = TabTextOff,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "View Map",
+                            fontSize = 12.sp,
+                            color = PharmaLinkBlue,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                // ── item 4: Empty State ───────────
+                if (filteredPharmacies.isEmpty()) {
+                    item(key = "empty") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 60.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "🏥",
+                                    fontSize = 48.sp
+                                )
+                                Text(
+                                    text = "No pharmacies found",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = PrimaryDarkText
+                                )
+                                Text(
+                                    text = "Try changing the filter or search query",
+                                    fontSize = 13.sp,
+                                    color = TabTextOff
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ── items: Pharmacy Cards ─────────
                 items(
                     items = filteredPharmacies,
                     key   = { it.pharmacyId }
                 ) { pharmacy ->
-                    PharmacyCard(
-                        pharmacy    = pharmacy,
-                        onClick     = { onPharmacyClick(pharmacy.pharmacyId) },
-                        onEditClick = { /* هنفعله بعدين */ },
-                        onMoreClick = { /* هنفعله بعدين */ }
-                    )
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        PharmacyCard(
+                            pharmacy    = pharmacy,
+                            onClick     = { onPharmacyClick(pharmacy.pharmacyId) },
+                            onEditClick = { },
+                            onMoreClick = { }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }

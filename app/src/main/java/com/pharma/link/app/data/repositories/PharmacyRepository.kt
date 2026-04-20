@@ -18,5 +18,11 @@ class PharmacyRepository @Inject constructor(
 
     suspend fun getPharmacyById(pharmacyId: String): PharmacyEntity? = pharmacyDao.getPharmacyById(pharmacyId)
 
+    suspend fun getPharmacyByPhone(phone: String) = pharmacyDao.getPharmacyByPhone(phone)
+
+    suspend fun getPharmacyByEmail(email: String) = pharmacyDao.getPharmacyByEmail(email)
+
+    suspend fun getPharmacyByLicenceNumber(licenceNumber: String) = pharmacyDao.getPharmacyByLicenceNumber(licenceNumber)
+
 
 }

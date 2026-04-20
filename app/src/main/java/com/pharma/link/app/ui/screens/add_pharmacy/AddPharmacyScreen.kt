@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.pharma.link.app.viewmodel.AddPharmacyResult
 import com.pharma.link.app.viewmodel.PharmacyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -17,20 +18,49 @@ fun AddPharmacyScreen(
     viewModel: PharmacyViewModel,
     onBack: () -> Unit
 ) {
-    var name           by remember { mutableStateOf("") }
-    var address        by remember { mutableStateOf("") }
-    var phone          by remember { mutableStateOf("") }
-    var email          by remember { mutableStateOf("") }
-    var licenceNumber  by remember { mutableStateOf("") }
-
-    // Dropdown للـ status
+    var name              by remember { mutableStateOf("") }
+    var address           by remember { mutableStateOf("") }
+    var phone             by remember { mutableStateOf("") }
+    var email             by remember { mutableStateOf("") }
+    var licenceNumber     by remember { mutableStateOf("") }
     var selectedStatus    by remember { mutableStateOf("ACTIVE") }
     var statusDropdownOpen by remember { mutableStateOf(false) }
+
+    // ── Error States ─────────────────────────────
+    var phoneError   by remember { mutableStateOf<String?>(null) }
+    var emailError   by remember { mutableStateOf<String?>(null) }
+    var licenceError by remember { mutableStateOf<String?>(null) }
+
     val statusOptions = listOf(
         "ACTIVE"    to "Active",
         "SUSPENDED" to "Suspended",
         "HIGH_DEBT" to "High Debt"
     )
+
+    // ── استماع لنتيجة الإضافة من الـ ViewModel ───
+    val addResult by viewModel.addResult.collectAsState()
+
+    LaunchedEffect(addResult) {
+        when (addResult) {
+            is AddPharmacyResult.Success -> {
+                viewModel.resetAddResult()
+                onBack()
+            }
+            is AddPharmacyResult.DuplicatePhone -> {
+                phoneError = "This phone number is already registered"
+                viewModel.resetAddResult()
+            }
+            is AddPharmacyResult.DuplicateEmail -> {
+                emailError = "This email is already registered"
+                viewModel.resetAddResult()
+            }
+            is AddPharmacyResult.DuplicateLicence -> {
+                licenceError = "This licence number is already registered"
+                viewModel.resetAddResult()
+            }
+            null -> {}
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -52,6 +82,8 @@ fun AddPharmacyScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
+            // ── Name ─────────────────────────────
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -60,6 +92,7 @@ fun AddPharmacyScreen(
                 singleLine = true
             )
 
+            // ── Address ──────────────────────────
             OutlinedTextField(
                 value = address,
                 onValueChange = { address = it },
@@ -68,31 +101,70 @@ fun AddPharmacyScreen(
                 singleLine = true
             )
 
+            // ── Phone ────────────────────────────
             OutlinedTextField(
                 value = phone,
-                onValueChange = { phone = it },
+                onValueChange = {
+                    phone = it
+                    phoneError = null // امسح الـ error لما يبدأ يكتب
+                },
                 label = { Text("Phone Number") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                isError = phoneError != null,
+                supportingText = {
+                    if (phoneError != null) {
+                        Text(
+                            text = phoneError!!,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             )
 
+            // ── Email ────────────────────────────
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = {
+                    email = it
+                    emailError = null
+                },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                isError = emailError != null,
+                supportingText = {
+                    if (emailError != null) {
+                        Text(
+                            text = emailError!!,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             )
 
+            // ── Licence Number ───────────────────
             OutlinedTextField(
                 value = licenceNumber,
-                onValueChange = { licenceNumber = it },
+                onValueChange = {
+                    licenceNumber = it
+                    licenceError = null
+                },
                 label = { Text("Licence Number") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                isError = licenceError != null,
+                supportingText = {
+                    if (licenceError != null) {
+                        Text(
+                            text = licenceError!!,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             )
 
-            // ── Status Dropdown ───────────────────
+            // ── Status Dropdown ──────────────────
             ExposedDropdownMenuBox(
                 expanded = statusDropdownOpen,
                 onExpandedChange = { statusDropdownOpen = it }
@@ -121,7 +193,7 @@ fun AddPharmacyScreen(
                         DropdownMenuItem(
                             text = { Text(label) },
                             onClick = {
-                                selectedStatus    = key
+                                selectedStatus     = key
                                 statusDropdownOpen = false
                             }
                         )
@@ -131,19 +203,22 @@ fun AddPharmacyScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // ── Save Button ──────────────────────
             Button(
                 onClick = {
-                    if (name.isNotBlank() && address.isNotBlank()) {
-                        viewModel.addPharmacy(
-                            name          = name,
-                            address       = address,
-                            phone         = phone,
-                            email         = email,
-                            licenceNumber = licenceNumber,
-                            status        = selectedStatus
-                        )
-                        onBack()
-                    }
+                    // امسح كل الـ errors القديمة
+                    phoneError   = null
+                    emailError   = null
+                    licenceError = null
+
+                    viewModel.addPharmacy(
+                        name          = name,
+                        address       = address,
+                        phone         = phone,
+                        email         = email,
+                        licenceNumber = licenceNumber,
+                        status        = selectedStatus
+                    )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = name.isNotBlank() && address.isNotBlank()
