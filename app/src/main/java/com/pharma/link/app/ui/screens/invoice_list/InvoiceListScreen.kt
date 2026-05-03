@@ -1,21 +1,18 @@
-package com.pharma.link.app.ui.screens.pharmacy_list
+package com.pharma.link.app.ui.screens.invoice_list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -24,38 +21,48 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pharma.link.app.ui.components.PharmaBottomNavBar
 import com.pharma.link.app.ui.theme.*
+import com.pharma.link.app.viewmodel.InvoiceViewModel
 import com.pharma.link.app.viewmodel.PharmacyViewModel
 
 @Composable
-fun PharmacyListScreen(
-    viewModel: PharmacyViewModel,
-    onAddPharmacyClick: () -> Unit,
-    onPharmacyClick: (String) -> Unit = {} ,
-    onEditPharmacyClick: (String) -> Unit = {},
-    // ضيف في الـ signature
-    onNavigate: (String) -> Unit = {},
+fun InvoiceListScreen(
+    invoiceViewModel: InvoiceViewModel,
+    pharmacyViewModel: PharmacyViewModel,
+    onAddInvoiceClick: () -> Unit,
+    onInvoiceClick: (Int) -> Unit,
+    onNavigate: (String) -> Unit,
 ) {
-    val filteredPharmacies by viewModel.filteredPharmacies.collectAsState()
-    val searchQuery        by viewModel.searchQuery.collectAsState()
-    val selectedFilter     by viewModel.selectedFilter.collectAsState()
-    val isLoading          by viewModel.isLoading.collectAsState()
-    var currentRoute       by remember { mutableStateOf("pharmacies") }
-    val focusManager       = LocalFocusManager.current
+    val filteredInvoices by invoiceViewModel.filteredInvoices.collectAsState()
+    val searchQuery      by invoiceViewModel.searchQuery.collectAsState()
+    val selectedFilter   by invoiceViewModel.selectedFilter.collectAsState()
+    val isLoading        by invoiceViewModel.isLoading.collectAsState()
+    val pharmacies       by pharmacyViewModel.filteredPharmacies.collectAsState()
+    val focusManager     = LocalFocusManager.current
+
+    // Map عشان نجيب اسم الصيدلية بالـ ID بسرعة
+    val pharmacyMap = remember(pharmacies) {
+        pharmacies.associate { it.pharmacyId to it.name }
+    }
+
+    val filterOptions = listOf(
+        "ALL"     to "All",
+        "PENDING" to "Pending",
+        "PAID"    to "Paid",
+        "OVERDUE" to "Overdue"
+    )
 
     Scaffold(
         containerColor = BackgroundColor,
         bottomBar = {
             PharmaBottomNavBar(
-                currentRoute = currentRoute,
+                currentRoute = "invoices",
                 onItemClick  = onNavigate,
-                onFabClick   = onAddPharmacyClick,
-
+                onFabClick   = onAddInvoiceClick
             )
         }
     ) { paddingValues ->
 
         if (isLoading) {
-            // ── Loading State ─────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -72,7 +79,7 @@ fun PharmacyListScreen(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
 
-                // ── item 1: Top Bar ───────────────
+                // ── TopBar ────────────────────────────
                 item(key = "topbar") {
                     Column(
                         modifier = Modifier
@@ -91,44 +98,28 @@ fun PharmacyListScreen(
                                     text = "PharmaLink",
                                     fontSize = 12.sp,
                                     color = PharmaLinkBlue,
-                                    fontWeight = FontWeight.Medium,
-                                    letterSpacing = 0.5.sp
+                                    fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = "Pharmacies",
+                                    text = "Invoices",
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = PrimaryDarkText
-                                )
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                TopIconButton(
-                                    icon = Icons.Default.Search,
-                                    onClick = {}
-                                )
-                                TopIconButton(
-                                    icon = Icons.Default.SwapVert,
-                                    onClick = {}
                                 )
                             }
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Search Bar
                         TextField(
                             value = searchQuery,
-                            onValueChange = { viewModel.onSearchQueryChange(it) },
+                            onValueChange = { invoiceViewModel.onSearchQueryChange(it) },
                             placeholder = {
-                                Text(
-                                    text = "Search for a pharmacy...",
-                                    fontSize = 14.sp,
-                                    color = TabTextOff
-                                )
+                                Text("Search invoices...", fontSize = 14.sp, color = TabTextOff)
                             },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Default.Search,
+                                    Icons.Default.Search,
                                     contentDescription = null,
                                     tint = TabTextOff,
                                     modifier = Modifier.size(18.dp)
@@ -144,55 +135,60 @@ fun PharmacyListScreen(
                                 disabledIndicatorColor  = Color.Transparent
                             ),
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(
-                                imeAction = ImeAction.Search
-                            ),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                             keyboardActions = KeyboardActions(
                                 onSearch = { focusManager.clearFocus() }
                             )
                         )
-
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
 
-                // ── item 2: Filter Chips ──────────
+                // ── Filter Chips ──────────────────────
                 item(key = "filters") {
                     Spacer(modifier = Modifier.height(8.dp))
-                    PharmacyFilterChips(
-                        selectedFilter   = selectedFilter,
-                        onFilterSelected = { viewModel.onFilterSelected(it) }
-                    )
-                }
-
-                // ── item 3: Counter Row ───────────
-                item(key = "counter") {
-                    Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = "${filteredPharmacies.size} Registered pharmacies",
-                            fontSize = 13.sp,
-                            color = TabTextOff,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "View Map",
-                            fontSize = 12.sp,
-                            color = PharmaLinkBlue,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        filterOptions.forEach { (key, label) ->
+                            val isSelected = selectedFilter == key
+                            Surface(
+                                onClick = { invoiceViewModel.onFilterSelected(key) },
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isSelected) PharmaLinkBlue else TabBackgroundOff
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (isSelected) TabTextOn else TabTextOff,
+                                    modifier = Modifier.padding(
+                                        horizontal = 16.dp, vertical = 6.dp
+                                    )
+                                )
+                            }
+                        }
                     }
+                }
+
+                // ── Counter ───────────────────────────
+                item(key = "counter") {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "${filteredInvoices.size} Invoices",
+                        fontSize = 13.sp,
+                        color = TabTextOff,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
                 }
 
-                // ── item 4: Empty State ───────────
-                if (filteredPharmacies.isEmpty()) {
+                // ── Empty State ───────────────────────
+                if (filteredInvoices.isEmpty()) {
                     item(key = "empty") {
                         Box(
                             modifier = Modifier
@@ -204,18 +200,15 @@ fun PharmacyListScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                Text(text = "🧾", fontSize = 48.sp)
                                 Text(
-                                    text = "🏥",
-                                    fontSize = 48.sp
-                                )
-                                Text(
-                                    text = "No pharmacies found",
+                                    text = "No invoices found",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = PrimaryDarkText
                                 )
                                 Text(
-                                    text = "Try changing the filter or search query",
+                                    text = "Tap + to add a new invoice",
                                     fontSize = 13.sp,
                                     color = TabTextOff
                                 )
@@ -224,17 +217,19 @@ fun PharmacyListScreen(
                     }
                 }
 
-                // ── items: Pharmacy Cards ─────────
+                // ── Invoice Cards ─────────────────────
                 items(
-                    items = filteredPharmacies,
-                    key   = { it.pharmacyId }
-                ) { pharmacy ->
+                    items = filteredInvoices,
+                    key   = { it.invoiceId ?: 0 }
+                ) { invoice ->
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        PharmacyCard(
-                            pharmacy    = pharmacy,
-                            onClick     = { onPharmacyClick(pharmacy.pharmacyId) },
-                            onEditClick   = { onEditPharmacyClick(pharmacy.pharmacyId) },
-                            onDeleteClick = { viewModel.deletePharmacy(pharmacy) }
+                        InvoiceCard(
+                            invoice      = invoice,
+                            pharmacyName = pharmacyMap[invoice.pharmacyId] ?: "",
+                            onClick      = { onInvoiceClick(invoice.invoiceId ?: 0) },
+                            onDeleteClick = {
+                                invoiceViewModel.deleteInvoice(invoice)
+                            }
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -244,25 +239,3 @@ fun PharmacyListScreen(
     }
 }
 
-@Composable
-fun TopIconButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(38.dp)
-            .clip(CircleShape)
-            .background(Color(0xFFEBF2FA)),
-        contentAlignment = Alignment.Center
-    ) {
-        IconButton(onClick = onClick, modifier = Modifier.size(38.dp)) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = PharmaLinkBlue,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}

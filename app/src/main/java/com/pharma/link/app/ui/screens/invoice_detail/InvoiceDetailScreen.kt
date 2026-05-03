@@ -1,44 +1,47 @@
-package com.pharma.link.app.ui.screens.pharmacy_detail
+package com.pharma.link.app.ui.screens.invoice_detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.pharma.link.app.data.entities.PharmacyEntity
-import com.pharma.link.app.ui.navigation.Screen
-import com.pharma.link.app.ui.screens.pharmacy_list.getCardColors
+import com.pharma.link.app.data.entities.InvoiceEntity
+import com.pharma.link.app.ui.screens.invoice_list.getInvoiceColors
 import com.pharma.link.app.ui.theme.*
+import com.pharma.link.app.viewmodel.InvoiceViewModel
 import com.pharma.link.app.viewmodel.PharmacyViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PharmacyDetailScreen(
-    pharmacyId: String,
-    viewModel: PharmacyViewModel,
-    onBack: () -> Unit,
-    onEditClick: (String) -> Unit = {},
-    onAddInvoiceClick: (String) -> Unit = {}
-) { 
-    // جيب الصيدلية من الـ ViewModel
-    var pharmacy by remember { mutableStateOf<PharmacyEntity?>(null) }
+fun InvoiceDetailScreen(
+    invoiceId: Int,
+    invoiceViewModel: InvoiceViewModel,
+    pharmacyViewModel: PharmacyViewModel,
+    onBack: () -> Unit
+) {
+    var invoice     by remember { mutableStateOf<InvoiceEntity?>(null) }
+    val pharmacies  by pharmacyViewModel.filteredPharmacies.collectAsState()
+    val dateFormat  = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
-    LaunchedEffect(pharmacyId) {
-        pharmacy = viewModel.getPharmacyById(pharmacyId)
+    LaunchedEffect(invoiceId) {
+        invoice = invoiceViewModel.getInvoiceById(invoiceId)
     }
 
-    pharmacy?.let { p ->
-        val colors = getCardColors(p.status)
+    invoice?.let { inv ->
+        val colors       = getInvoiceColors(inv.status)
+        val pharmacyName = pharmacies.find {
+            it.pharmacyId == inv.pharmacyId
+        }?.name ?: inv.pharmacyId
 
         Scaffold(
             containerColor = BackgroundColor,
@@ -46,7 +49,7 @@ fun PharmacyDetailScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = p.name,
+                            "Invoice #${inv.invoiceId}",
                             fontWeight = FontWeight.Bold,
                             color = PrimaryDarkText
                         )
@@ -54,21 +57,16 @@ fun PharmacyDetailScreen(
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
+                                Icons.Default.ArrowBack,
                                 contentDescription = "Back",
                                 tint = PharmaLinkBlue
                             )
                         }
                     },
-                    actions = {
-                        IconButton(onClick = { onEditClick(pharmacyId) }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit",
-                                tint = PharmaLinkBlue
-                            )
-                        }
-                    })
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = BackgroundColor
+                    )
+                )
             }
         ) { paddingValues ->
             Column(
@@ -82,8 +80,8 @@ fun PharmacyDetailScreen(
                 // ── Header Card ───────────────────────
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape    = RoundedCornerShape(18.dp),
+                    colors   = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(0.dp)
                 ) {
                     Row(
@@ -91,7 +89,6 @@ fun PharmacyDetailScreen(
                             .fillMaxWidth()
                             .height(IntrinsicSize.Min)
                     ) {
-                        // الخط الجانبي
                         Box(
                             modifier = Modifier
                                 .width(4.dp)
@@ -102,16 +99,16 @@ fun PharmacyDetailScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            // الاسم + الـ Badge
+                            // Status Badge
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = p.name,
+                                    text = "Invoice #${inv.invoiceId}",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = PrimaryDarkText
@@ -134,20 +131,22 @@ fun PharmacyDetailScreen(
 
                             HorizontalDivider(color = Color(0xFFEBF2FA))
 
-                            // تفاصيل
-                            DetailRow(Icons.Default.LocationOn, p.address)
-                            DetailRow(Icons.Default.Phone,      p.phone)
-                            DetailRow(Icons.Default.Email,      p.email)
-                            DetailRow(Icons.Default.Badge,      p.licenceNumber)
+                            // التفاصيل
+                            InvoiceDetailRow("Pharmacy",   pharmacyName)
+                            InvoiceDetailRow("Date",       dateFormat.format(Date(inv.date)))
+                            InvoiceDetailRow("Due Date",   dateFormat.format(Date(inv.dueDate)))
+                            if (!inv.notes.isNullOrBlank()) {
+                                InvoiceDetailRow("Notes", inv.notes)
+                            }
                         }
                     }
                 }
 
-                // ── Balance Card ──────────────────────
+                // ── Amount Card ───────────────────────
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    modifier  = Modifier.fillMaxWidth(),
+                    shape     = RoundedCornerShape(18.dp),
+                    colors    = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(0.dp)
                 ) {
                     Column(
@@ -155,45 +154,49 @@ fun PharmacyDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "Outstanding Balance",
+                            text = "Total Amount",
                             fontSize = 13.sp,
                             color = TabTextOff
                         )
                         Text(
-                            text = "0 L.E.",
+                            text = "${inv.totalAmount} L.E.",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
-                            color = colors.balanceColor
+                            color = colors.amountColor
                         )
                     }
                 }
 
                 // ── Action Buttons ────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            onAddInvoiceClick(p.pharmacyId)
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PharmaLinkBlue
-                        )
+                if (inv.status == "PENDING") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("New Invoice")
-                    }
+                        Button(
+                            onClick = {
+                                invoiceViewModel.updateInvoiceStatus(inv, "PAID")
+                                onBack()
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = StatusActiveText
+                            )
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Mark as Paid")
+                        }
 
-                    OutlinedButton(
-                        onClick = { /* هنفعله بعدين */ },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.History, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("History")
+                        OutlinedButton(
+                            onClick = {
+                                invoiceViewModel.updateInvoiceStatus(inv, "OVERDUE")
+                                onBack()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Mark Overdue", color = Color(0xFFD32F2F))
+                        }
                     }
                 }
             }
@@ -207,23 +210,17 @@ fun PharmacyDetailScreen(
 }
 
 @Composable
-private fun DetailRow(icon: ImageVector, value: String) {
-    if (value.isBlank()) return
+private fun InvoiceDetailRow(label: String, value: String) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = TabTextOff,
-            modifier = Modifier.size(16.dp)
-        )
+        Text(text = label, fontSize = 13.sp, color = TabTextOff)
         Text(
             text = value,
-            fontSize = 14.sp,
-            color = SecondaryGrayText
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = PrimaryDarkText
         )
     }
 }
-
